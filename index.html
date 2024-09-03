@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Box Breathing Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            padding-top: 20px; /* Add some padding at the top of the page */
+        }
+        #container {
+            text-align: center;
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh; /* Ensure the container takes up at least the full viewport height */
+        }
+        #box-container {
+            position: relative;
+            width: 300px; /* Set a fixed width */
+            height: 300px; /* Set a fixed height */
+            margin: 20px 0; /* Add margin above and below the box */
+        }
+        #box {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #000;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #dot {
+            width: 26px;  /* Increased from 20px (20 * 1.3 = 26) */
+            height: 26px; /* Increased from 20px (20 * 1.3 = 26) */
+            border-radius: 50%;
+            position: absolute;
+            top: -13px;   /* Adjusted to keep the dot centered (-10 * 1.3 = -13) */
+            right: -13px; /* Adjusted to keep the dot centered (-10 * 1.3 = -13) */
+        }
+        #phase-text {
+            font-size: 24px;
+            opacity: 1;
+            transition: opacity 0.3s ease-in-out;
+            position: absolute;
+            top: 40%; /* Adjust this value as needed */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            text-align: center;
+        }
+        #countdown {
+            font-size: 18px;
+            color: rgba(0, 0, 0, 0.5);
+            position: absolute;
+            bottom: 40%; /* Changed from 20% to 40% to move it up */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            text-align: center;
+        }
+        #controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px; /* Increase top margin */
+        }
+        button {
+            border: none;
+            display: inline-block;
+            position: relative;
+            padding: 0.7em 1.5em;
+            font-size: 18px;
+            background: transparent;
+            cursor: pointer;
+            user-select: none;
+            overflow: hidden;
+            color: #5D8AA8; /* Calmer blue tone */
+            z-index: 1;
+            font-family: inherit;
+            font-weight: 500;
+            margin: 10px;
+        }
+
+        button span {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: -1;
+            border: 2px solid #5D8AA8; /* Calmer blue tone */
+        }
+
+        button span::before {
+            content: "";
+            display: block;
+            position: absolute;
+            width: 8%;
+            height: 500%;
+            background: var(--lightgray);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-60deg);
+            transition: all 0.3s;
+        }
+
+        button:hover span::before {
+            transform: translate(-50%, -50%) rotate(-90deg);
+            width: 100%;
+            background: #5D8AA8; /* Calmer blue tone */
+        }
+
+        button:hover {
+            color: white;
+        }
+
+        button:active span::before {
+            background: #4A6F8A; /* Darker shade for active state */
+        }
+
+        /* Additional styles for disabled buttons */
+        button:disabled {
+            color: #A9A9A9;
+            cursor: not-allowed;
+        }
+
+        button:disabled span {
+            border-color: #A9A9A9;
+        }
+
+        button:disabled:hover span::before {
+            background: #A9A9A9;
+        }
+
+        #summary {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        /* Dropdown styles */
+        .dropdown-control {
+            position: relative;
+            display: inline-block;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 3px;
+        }
+
+        .dropdown-control label {
+            display: block;
+            margin-bottom: 2px;
+            font-size: 12px;
+            color: #4A90E2;
+        }
+
+        .dropdown-button {
+            background-color: #4A90E2;
+            color: #ffffff;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 150px;
+            text-align: left;
+        }
+
+        .dropdown-content {
+            font-size: 11px;
+            width: 150px;
+        }
+
+        .dropdown-content option {
+            padding: 4px 6px;
+        }
+
+        h1 {
+            color: #4A90E2;
+            margin-bottom: 10px;
+        }
+
+        .description {
+            max-width: 600px;
+            margin: 0 auto 20px;
+            color: #2C3E50;
+            line-height: 1.6;
+            margin-bottom: 20px; /* Increase bottom margin */
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>Box Breathing Visualization</h1>
+        <p class="description">
+            Box breathing is a simple relaxation technique that can help reduce stress and improve focus. 
+            Inhale, hold, exhale, and hold again, each for 4 seconds by default. 
+            This rhythmic breathing pattern promotes calmness and mental clarity.
+        </p>
+        <div id="box-container">
+            <div id="box">
+                <div id="dot"></div>
+                <div id="phase-text"></div>
+                <div id="countdown"></div>
+            </div>
+        </div>
+        <div id="controls">
+            <button id="start"><span></span>Start</button>
+            <button id="pause" disabled><span></span>Pause</button>
+            <button id="reset" disabled><span></span>Reset</button>
+            <button id="mute"><span></span>Mute</button>
+        </div>
+        <div id="controls-container">
+            <div class="dropdown-control">
+                <label for="duration">Duration (s):</label>
+                <select id="duration" class="dropdown-button">
+                    <option value="4" selected>4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                </select>
+            </div>
+            <div class="dropdown-control">
+                <label for="theme">Theme:</label>
+                <select id="theme" class="dropdown-button">
+                    <option value="default" selected>Default</option>
+                    <option value="green-purple">Green/Purple</option>
+                    <option value="red-yellow">Red/Yellow</option>
+                </select>
+            </div>
+            <div class="dropdown-control">
+                <label for="music">Music:</label>
+                <select id="music" class="dropdown-button">
+                    <option value="none" selected>None</option>
+                    <option value="river">River</option>
+                    <option value="gong">Gong</option>
+                    <option value="harp">Harp</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div id="summary"></div>
+
+    <script>
+        const box = document.getElementById('box');
+        const dot = document.getElementById('dot');
+        const phaseText = document.getElementById('phase-text');
+        const startButton = document.getElementById('start');
+        const pauseButton = document.getElementById('pause');
+        const resetButton = document.getElementById('reset');
+        const muteButton = document.getElementById('mute');
+        const durationSelect = document.getElementById('duration');
+        const themeSelect = document.getElementById('theme');
+        const musicSelect = document.getElementById('music');
+        const summaryDiv = document.getElementById('summary');
+        const countdownDiv = document.getElementById('countdown');
+
+        let animationId;
+        let startTime;
+        let pauseTime;
+        let isPaused = false;
+        let isMuted = false;
+        let breathCount = 0;
+
+        const phases = ['Exhale', 'Hold', 'Inhale', 'Hold'];
+        const points = [
+            { x: 300, y: 0 },   // A: Upper right
+            { x: 300, y: 300 }, // B: Lower right
+            { x: 0, y: 300 },   // C: Lower left
+            { x: 0, y: 0 }      // D: Upper left
+        ];
+
+        function getColors() {
+            switch (themeSelect.value) {
+                case 'green-purple':
+                    return { color1: '#9C27B0', color2: '#4CAF50' }; // Purple (energetic) and Green (calm)
+                case 'red-yellow':
+                    return { color1: '#F44336', color2: '#FFEB3B' }; // Red (energetic) and Yellow (calm)
+                default:
+                    return { color1: '#2196F3', color2: '#FF9800' }; // Blue (energetic) and Orange (calm)
+            }
+        }
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsedTime = timestamp - startTime;
+            const duration = parseInt(durationSelect.value) * 1000;
+            const totalCycleDuration = duration * 4;
+            const cycleTime = elapsedTime % totalCycleDuration;
+            const phaseIndex = Math.floor(cycleTime / duration);
+            const phaseTime = cycleTime % duration;
+
+            const { color1, color2 } = getColors();
+
+            // Calculate position
+            const startPoint = points[phaseIndex];
+            const endPoint = points[(phaseIndex + 1) % 4];
+            const progress = phaseTime / duration;
+
+            // Apply 0.2-second pause at each point
+            const pauseDuration = 200; // 0.2 seconds in milliseconds
+            let adjustedProgress = progress;
+            if (progress < pauseDuration / duration) {
+                adjustedProgress = 0;
+            } else if (progress > 1 - pauseDuration / duration) {
+                adjustedProgress = 1;
+            } else {
+                adjustedProgress = (progress - pauseDuration / duration) / (1 - 2 * pauseDuration / duration);
+            }
+
+            const x = startPoint.x + (endPoint.x - startPoint.x) * adjustedProgress;
+            const y = startPoint.y + (endPoint.y - startPoint.y) * adjustedProgress;
+
+            dot.style.left = `${x - 10}px`;
+            dot.style.top = `${y - 10}px`;
+
+            // Box size animation
+            const originalSize = 300;
+            const minSize = originalSize * 0.75; // 25% reduction
+            let currentSize;
+
+            if (phaseIndex === 0) { // Exhale
+                currentSize = originalSize - (originalSize - minSize) * progress;
+            } else if (phaseIndex === 1) { // Hold after Exhale
+                currentSize = minSize;
+            } else if (phaseIndex === 2) { // Inhale
+                currentSize = minSize + (originalSize - minSize) * progress;
+            } else { // Hold after Inhale
+                currentSize = originalSize;
+            }
+
+            box.style.width = `${currentSize}px`;
+            box.style.height = `${currentSize}px`;
+            box.style.top = '50%';
+            box.style.left = '50%';
+            box.style.transform = `translate(-50%, -50%) scale(${currentSize / originalSize})`;
+
+            // Adjust dot position based on new box size
+            const scale = currentSize / originalSize;
+            dot.style.left = `${(x * scale) - 13}px`;
+            dot.style.top = `${(y * scale) - 13}px`;
+
+            // Color transition
+            let color;
+            if (phaseIndex === 0) {
+                // Exhale: transition from color1 to color2
+                const colorProgress = progress;
+                const r = parseInt(color1.slice(1, 3), 16) + (parseInt(color2.slice(1, 3), 16) - parseInt(color1.slice(1, 3), 16)) * colorProgress;
+                const g = parseInt(color1.slice(3, 5), 16) + (parseInt(color2.slice(3, 5), 16) - parseInt(color1.slice(3, 5), 16)) * colorProgress;
+                const b = parseInt(color1.slice(5, 7), 16) + (parseInt(color2.slice(5, 7), 16) - parseInt(color1.slice(5, 7), 16)) * colorProgress;
+                color = `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+            } else if (phaseIndex === 1 || phaseIndex === 3) {
+                // Hold phases: use color2 (calm color)
+                color = color2;
+            } else if (phaseIndex === 2) {
+                // Inhale: transition from color2 to color1
+                const colorProgress = progress;
+                const r = parseInt(color2.slice(1, 3), 16) + (parseInt(color1.slice(1, 3), 16) - parseInt(color2.slice(1, 3), 16)) * colorProgress;
+                const g = parseInt(color2.slice(3, 5), 16) + (parseInt(color1.slice(3, 5), 16) - parseInt(color2.slice(3, 5), 16)) * colorProgress;
+                const b = parseInt(color2.slice(5, 7), 16) + (parseInt(color1.slice(5, 7), 16) - parseInt(color2.slice(5, 7), 16)) * colorProgress;
+                color = `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+            }
+
+            box.style.borderColor = color;
+            dot.style.backgroundColor = color;
+            phaseText.style.color = color;
+
+            // Update phase text
+            const fadeDuration = duration * 0.25; // 25% of the phase duration for fade in/out
+            let fadeProgress;
+
+            if (phaseTime < fadeDuration) {
+                // Fade in
+                fadeProgress = phaseTime / fadeDuration;
+                phaseText.textContent = phases[phaseIndex];
+                phaseText.style.opacity = fadeProgress.toFixed(2);
+            } else if (phaseTime > duration - fadeDuration) {
+                // Fade out
+                fadeProgress = (duration - phaseTime) / fadeDuration;
+                phaseText.textContent = phases[phaseIndex];
+                phaseText.style.opacity = fadeProgress.toFixed(2);
+                
+                // Start fading in the next phase text only when current text is almost fully faded out
+                if (fadeProgress < 0.05) {
+                    phaseText.textContent = phases[(phaseIndex + 1) % 4];
+                    phaseText.style.opacity = (1 - fadeProgress).toFixed(2);
+                }
+            } else {
+                // Fully visible
+                phaseText.textContent = phases[phaseIndex];
+                phaseText.style.opacity = "1";
+            }
+            
+            // Count breaths
+            if (phaseIndex === 3 && phaseTime > duration - 100) {
+                breathCount++;
+            }
+
+            // Update countdown
+            const countdown = Math.max(0, Math.ceil((duration - phaseTime) / 1000));
+            countdownDiv.textContent = countdown;
+
+            // Fade out countdown near the end of each phase
+            if (phaseTime > duration - fadeDuration) {
+                const fadeOutProgress = (phaseTime - (duration - fadeDuration)) / fadeDuration;
+                countdownDiv.style.opacity = (1 - fadeOutProgress).toFixed(2);
+            } else {
+                countdownDiv.style.opacity = "1";
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        startButton.addEventListener('click', () => {
+            if (isPaused) {
+                startTime = performance.now() - pauseTime;
+                isPaused = false;
+            } else {
+                startTime = null;
+                breathCount = 0;
+            }
+            animationId = requestAnimationFrame(animate);
+            startButton.disabled = true;
+            pauseButton.disabled = false;
+            resetButton.disabled = false;
+        });
+
+        pauseButton.addEventListener('click', () => {
+            cancelAnimationFrame(animationId);
+            pauseTime = performance.now() - startTime;
+            isPaused = true;
+            startButton.disabled = false;
+            pauseButton.disabled = true;
+        });
+
+        resetButton.addEventListener('click', () => {
+            cancelAnimationFrame(animationId);
+            dot.style.left = '-10px';
+            dot.style.top = '-10px';
+            phaseText.textContent = '';
+            startButton.disabled = false;
+            pauseButton.disabled = true;
+            resetButton.disabled = true;
+            breathCount = 0; // Reset breath count
+            showSummary();
+            summaryDiv.style.display = 'none';
+            countdownDiv.textContent = '';
+        });
+
+        muteButton.addEventListener('click', () => {
+            isMuted = !isMuted;
+            muteButton.textContent = isMuted ? 'Unmute' : 'Mute';
+            // TODO: Implement actual audio muting
+        });
+
+        function showSummary() {
+            const totalTime = Math.floor((performance.now() - startTime) / 1000);
+            summaryDiv.innerHTML = `
+                <h2>Session Summary</h2>
+                <p>Total time: ${totalTime} seconds</p>
+                <p>Breaths completed: ${breathCount}</p>
+                <button onclick="this.parentElement.style.display='none'">Close</button>
+            `;
+            summaryDiv.style.display = 'block';
+        }
+
+        // TODO: Implement background music functionality
+    </script>
+</body>
+</html>
